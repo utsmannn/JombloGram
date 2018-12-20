@@ -4,12 +4,9 @@ Android Instagram Downloader
 <a href='https://play.google.com/store/apps/details?id=com.kucingapes.jomblogram'><img alt='Get it on Google Play' src='https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png' width='200'/></a>
 <br>
 
-
-
-
 |Main with guide|Video downloader|Image downloader|
 |---|---|---|
-|![](https://i.ibb.co/F31NjXk/google-play-badge-128x128.png)|![](https://i.ibb.co/Mg1RWKN/2.png)|![](https://i.ibb.co/MGpvLjw/3.png)|
+|![](https://i.ibb.co/9yK6Z2W/1.png)|![](https://i.ibb.co/Mg1RWKN/2.png)|![](https://i.ibb.co/MGpvLjw/3.png)|
 
 |Suport multiple image post|Caption copier|Notif download|
 |---|---|---|
