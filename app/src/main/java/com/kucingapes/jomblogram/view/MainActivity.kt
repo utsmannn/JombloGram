@@ -1,3 +1,9 @@
+/*
+ * Created by Muhammad Utsman on 21/12/2018
+ * Copyright (c) 2018 . All rights reserved.
+ * Last modified 12/20/18 10:56 PM
+ */
+
 package com.kucingapes.jomblogram.view
 
 import android.annotation.SuppressLint
@@ -28,6 +34,10 @@ import kotlinx.android.synthetic.main.content.*
 import kotlinx.android.synthetic.main.custom_appbar.*
 import kotlinx.android.synthetic.main.info_layout.*
 
+/**
+ * Base pattern Model-View-Presenter (MVP)
+ * Implement all interface for enable function from presenter
+ * */
 class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloadView {
 
     private lateinit var resultPresenter: ResultPresenter
@@ -50,46 +60,26 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         initInfo()
     }
 
-    private fun initInfo() {
-        val viewInfo = BottomSheetDialog(this)
-        viewInfo.setContentView(R.layout.info_layout)
-
-        val btnRepo = viewInfo.btn_repo
-        val btnFaaraz = viewInfo.btn_api
-        val btnContact = viewInfo.btn_contact
-
-        btnRepo.setOnClickListener {
-            val url = "https://github.com/utsmannn/jomblogram"
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = Uri.parse(url)
-            startActivity(intent)
-        }
-
-        btnFaaraz.setOnClickListener {
-            val url = "https://rest.farzain.com/"
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.data = Uri.parse(url)
-            startActivity(intent)
-        }
-
-        btnContact.setOnClickListener {
-            val uri = "mailto:utsmannn@outlook.com"
-            val intent = Intent(Intent.ACTION_SENDTO)
-            intent.data = Uri.parse(uri)
-            startActivity(intent)
-        }
-
-        info.setOnClickListener {
-            viewInfo.show()
-        }
-    }
-
+    /**
+     * Paste url instagram when app launch
+     * */
     private fun initPasting() {
+        /**
+         * Get data paste from clipboard
+         * */
         val clipBoard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clipData = clipBoard.primaryClip
 
+        /**
+         * If data paste found
+         * */
         if (clipData != null) {
             val item = clipData.getItemAt(0).text.toString()
+
+            /**
+             * Case if data paste as Instagram link,
+             * start call API in presenter
+             * */
             if (item.contains("https://www.instagram.com/")) {
                 paste_string.text = item
                 card_post.visibility = View.VISIBLE
@@ -109,16 +99,30 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         btn_copy_caption.visibility = View.VISIBLE
         btn_copy_caption.text = getString(R.string.copy_caption)
 
+
+        /**
+         * Detect if multiple image post,
+         * when exists images, add images to list
+         * and setup recyclerview
+         * */
         if (instagram.pictUrl?.size != null) {
             img_result.visibility = View.GONE
             images.addAll(instagram.pictUrl as MutableList<String>)
             initListImage()
 
+            /**
+             * Detect if multiple image post contains video url
+             * when exists video, add videos to list
+             * */
             if (instagram.videoUrl?.size != null) {
                 videos.addAll(instagram.videoUrl as MutableList<String>)
             }
 
         } else {
+            /**
+             * if single image or video, direct load with Glide
+             * and setup method 'onDownload'
+             * */
             Glide.with(this)
                     .load(instagram.firstPict)
                     .into(img_result)
@@ -130,6 +134,9 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
             }
         }
 
+        /**
+         * Detect caption Instagram from API
+         * */
         if (instagram.caption == null || instagram.caption == "") {
             caption.text = getString(R.string.no_caption)
             btn_copy_caption.isEnabled = false
@@ -138,6 +145,10 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         }
 
         btn_copy_caption.setOnClickListener {
+
+            /**
+             * Copy caption with ClipboardManager
+             * */
             val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clipData = ClipData.newPlainText("caption", instagram.caption)
             clipboardManager.primaryClip = clipData
@@ -156,9 +167,17 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         list_image.adapter = imgAdapter
         imgAdapter.notifyDataSetChanged()
 
+        /**
+         * Setup indicator and snap recyclerview
+         * */
         indicator.attachTo(list_image)
         LinearSnapHelper().attachToRecyclerView(list_image)
 
+        /**
+         * Apply notify changes when recyclerview scrolling
+         * notify changes using in func 'onDownload' from IDownloadButton
+         * for detect visible item, images or videos
+         * */
         list_image.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                 super.onScrollStateChanged(recyclerView, newState)
@@ -167,6 +186,9 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         })
     }
 
+    /**
+     * For error message from call API
+     * */
     @SuppressLint("SetTextI18n")
     override fun onResultError(anError: ANError) {
         caption.text = "Error: ${anError.localizedMessage}"
@@ -207,6 +229,11 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         snackBarShow("Download error: ${anError.localizedMessage}")
     }
 
+
+    /**
+     * For Android O+, notificationManager required
+     * register notification when app launch
+     * */
     private fun registerNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = "Download Image"
@@ -224,5 +251,43 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
 
     private fun snackBarShow(data: String) {
         Snackbar.make(parent_layout, data, Snackbar.LENGTH_SHORT).show()
+    }
+
+
+    /**
+     * Setup simple info app with BottomSheetDialog
+     * */
+    private fun initInfo() {
+        val viewInfo = BottomSheetDialog(this)
+        viewInfo.setContentView(R.layout.info_layout)
+
+        val btnRepo = viewInfo.btn_repo
+        val btnFaaraz = viewInfo.btn_api
+        val btnContact = viewInfo.btn_contact
+
+        btnRepo.setOnClickListener {
+            val url = "https://github.com/utsmannn/jomblogram"
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = Uri.parse(url)
+            startActivity(intent)
+        }
+
+        btnFaaraz.setOnClickListener {
+            val url = "https://rest.farzain.com/"
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.data = Uri.parse(url)
+            startActivity(intent)
+        }
+
+        btnContact.setOnClickListener {
+            val uri = "mailto:utsmannn@outlook.com"
+            val intent = Intent(Intent.ACTION_SENDTO)
+            intent.data = Uri.parse(uri)
+            startActivity(intent)
+        }
+
+        info.setOnClickListener {
+            viewInfo.show()
+        }
     }
 }
