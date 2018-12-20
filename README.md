@@ -24,5 +24,5 @@ https://rest.farzain.com/
 |[Page Indicator](https://github.com/chahine/pageindicator)|chahine|Page indicator for recyclerview horizontal|
 
 ---
-Develop by Muhammad Utsman
+Develop by Muhammad Utsman<br>
 [LICENSE](/LICENSE)
