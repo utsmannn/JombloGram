@@ -22,3 +22,7 @@ https://rest.farzain.com/
 |[Glide](https://github.com/bumptech/glide)|bumptech|Image loading framework|
 |[Dexter](https://github.com/Karumi/Dexter)|Karumi|Permission helper|
 |[Page Indicator](https://github.com/chahine/pageindicator)|chahine|Page indicator for recyclerview horizontal|
+
+---
+Develop by Muhammad Utsman
+[LICENSE](/LICENSE)
