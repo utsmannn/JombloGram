@@ -17,6 +17,7 @@ import android.net.Uri
 import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
 import android.support.design.widget.BottomSheetDialog
 import android.support.design.widget.Snackbar
 import android.support.v7.widget.*
@@ -24,14 +25,19 @@ import android.view.View
 import com.androidnetworking.AndroidNetworking
 import com.androidnetworking.error.ANError
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
+import com.kucingapes.jomblogram.services.BgService
 import com.kucingapes.jomblogram.model.Instagram
 import com.kucingapes.jomblogram.adapter.ItemListAdapter
 import com.kucingapes.jomblogram.R
+import com.kucingapes.jomblogram.helper.Utils
+import com.kucingapes.jomblogram.model.TypeShare
 import com.kucingapes.jomblogram.presenter.DownloadPresenter
 import com.kucingapes.jomblogram.presenter.ResultPresenter
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content.*
 import kotlinx.android.synthetic.main.custom_appbar.*
+import kotlinx.android.synthetic.main.guide_repost.*
 import kotlinx.android.synthetic.main.info_layout.*
 
 /**
@@ -47,9 +53,13 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
     private val images: MutableList<String> = mutableListOf()
     private val videos: MutableList<String> = mutableListOf()
 
+    private var tempUrl = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        sendBroadcast(Intent(this, BgService::class.java))
         AndroidNetworking.initialize(this)
         registerNotificationChannel()
 
@@ -58,6 +68,24 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         downloadPresenter = DownloadPresenter(this)
         initPasting()
         initInfo()
+        initTutorial()
+    }
+
+    /**
+     * Detect tutorial has been open
+     * or not
+     * */
+    private fun initTutorial() {
+        val sharedPref = getSharedPreferences("main", Context.MODE_PRIVATE)
+        val stateTutor = sharedPref.getBoolean("tutorial", false)
+
+        /**
+         * if tutorial never has been open,
+         * open activity tutorial
+         * */
+        if (!stateTutor) {
+            startActivity(Intent(this, TutorialActivity::class.java))
+        }
     }
 
     /**
@@ -80,7 +108,7 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
              * Case if data paste as Instagram link,
              * start call API in presenter
              * */
-            if (item.contains("https://www.instagram.com/")) {
+            if (item.startsWith("https://www.instagram.com/")) {
                 paste_string.text = item
                 card_post.visibility = View.VISIBLE
                 tutor_view.visibility = View.GONE
@@ -98,7 +126,6 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         btn_download.visibility = View.VISIBLE
         btn_copy_caption.visibility = View.VISIBLE
         btn_copy_caption.text = getString(R.string.copy_caption)
-
 
         /**
          * Detect if multiple image post,
@@ -119,18 +146,34 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
             }
 
         } else {
-            /**
-             * if single image or video, direct load with Glide
-             * and setup method 'onDownload'
-             * */
-            Glide.with(this)
-                    .load(instagram.firstPict)
-                    .into(img_result)
+            if (instagram.firstPict != null) {
+                /**
+                 * if single image or video, direct load with Glide
+                 * and setup method 'onDownload'
+                 * */
+                Glide.with(this)
+                        .setDefaultRequestOptions(RequestOptions().placeholder(Utils.circularProgress(this)))
+                        .load(instagram.firstPict)
+                        .into(img_result)
 
-            onDownload(instagram.firstPict as String, null)
+                onDownload(instagram.firstPict as String, null)
 
-            if (instagram.firstVideo != null) {
-                onDownload(instagram.firstVideo as String, instagram.firstVideo as String)
+                if (instagram.firstVideo != null) {
+                    onDownload(instagram.firstVideo as String, instagram.firstVideo as String)
+                }
+            } else {
+                /**
+                 * Delay and set visibility if api error
+                 * */
+                Handler().postDelayed({
+                    tutor_view.visibility = View.VISIBLE
+                    card_post.visibility = View.GONE
+                    card_caption.visibility = View.GONE
+                    btn_copy_caption.visibility = View.GONE
+                    share_layout.visibility = View.GONE
+                }, 300)
+
+                paste_string.text = getString(R.string.not_ig_link)
             }
         }
 
@@ -145,18 +188,60 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         }
 
         btn_copy_caption.setOnClickListener {
-
-            /**
-             * Copy caption with ClipboardManager
-             * */
-            val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clipData = ClipData.newPlainText("caption", instagram.caption)
-            clipboardManager.primaryClip = clipData
+            copyToClipboard(instagram)
             snackBarShow("Caption copied")
         }
 
         card_caption.visibility = View.VISIBLE
         progress_circular.visibility = View.GONE
+
+        initShare(instagram)
+    }
+
+
+    private fun initShare(instagram: Instagram) {
+        share_layout.visibility = View.VISIBLE
+
+        val dialogGuideRepost = BottomSheetDialog(this)
+        dialogGuideRepost.setContentView(R.layout.guide_repost)
+
+        val gifGuideRepost = dialogGuideRepost.gif_guide
+        Glide.with(dialogGuideRepost.context)
+                .load(R.drawable.guide_repost)
+                .into(gifGuideRepost)
+
+        val btnRepost = dialogGuideRepost.btn_guide_repost
+        btnRepost?.setOnClickListener {
+            dialogGuideRepost.hide()
+            copyToClipboard(instagram)
+            if (tempUrl.contains(".mp4")) {
+                downloadPresenter.start(tempUrl, "mp4", TypeShare.REPOST)
+            } else {
+                if (tempUrl.contains(".gif")) {
+                    downloadPresenter.start(tempUrl, "gif", TypeShare.REPOST)
+                } else {
+                    downloadPresenter.start(tempUrl, "jpg", TypeShare.REPOST)
+                }
+            }
+        }
+
+        btn_repost.setOnClickListener {
+            dialogGuideRepost.show()
+        }
+
+        btn_share.setOnClickListener {
+            downloadPresenter.getCaption(instagram.caption)
+            if (tempUrl.contains(".mp4")) {
+                downloadPresenter.start(tempUrl, "mp4", TypeShare.APP)
+            } else {
+                if (tempUrl.contains(".gif")) {
+                    downloadPresenter.start(tempUrl, "gif", TypeShare.APP)
+                } else {
+                    downloadPresenter.start(tempUrl, "jpg", TypeShare.APP)
+                }
+            }
+        }
+
     }
 
     private fun initListImage() {
@@ -198,24 +283,25 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
 
     override fun onDownload(image: String, video: String?) {
         if (video != null) {
+            tempUrl = video
             btn_download.text = getString(R.string.dl_video)
             btn_download.setOnClickListener {
                 snackBarShow("Downloads start")
-                downloadPresenter.start(video, "mp4")
+                downloadPresenter.start(video, "mp4", null)
             }
         } else {
-
+            tempUrl = image
             if (image.contains(".gif")) {
                 btn_download.text = getString(R.string.dl_gif)
                 btn_download.setOnClickListener {
                     snackBarShow("Download start")
-                    downloadPresenter.start(image, "gif")
+                    downloadPresenter.start(image, "gif", null)
                 }
             } else {
                 btn_download.text = getString(R.string.dl_image)
                 btn_download.setOnClickListener {
                     snackBarShow("Download start")
-                    downloadPresenter.start(image, "jpg")
+                    downloadPresenter.start(image, "jpg", null)
                 }
             }
         }
@@ -229,6 +315,14 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         snackBarShow("Download error: ${anError.localizedMessage}")
     }
 
+    private fun copyToClipboard(instagram: Instagram) {
+        /**
+         * Copy caption with ClipboardManager
+         * */
+        val clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clipData = ClipData.newPlainText("caption", instagram.caption)
+        clipboardManager.primaryClip = clipData
+    }
 
     /**
      * For Android O+, notificationManager required
@@ -253,7 +347,6 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         Snackbar.make(parent_layout, data, Snackbar.LENGTH_SHORT).show()
     }
 
-
     /**
      * Setup simple info app with BottomSheetDialog
      * */
@@ -264,6 +357,7 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
         val btnRepo = viewInfo.btn_repo
         val btnFaaraz = viewInfo.btn_api
         val btnContact = viewInfo.btn_contact
+        val btnTutor = viewInfo.btn_tutor
 
         btnRepo.setOnClickListener {
             val url = "https://github.com/utsmannn/jomblogram"
@@ -284,6 +378,10 @@ class MainActivity : AppCompatActivity(), IResultView, IButtonDownload, IDownloa
             val intent = Intent(Intent.ACTION_SENDTO)
             intent.data = Uri.parse(uri)
             startActivity(intent)
+        }
+
+        btnTutor.setOnClickListener {
+            startActivity(Intent(this, TutorialActivity::class.java))
         }
 
         info.setOnClickListener {

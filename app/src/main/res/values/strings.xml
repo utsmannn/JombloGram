@@ -9,10 +9,21 @@
     <string name="not_pasting">Post instagram not pasting</string>
     <string name="dl_gif">Download GIF</string>
     <string name="desc">Instagram Post Downloader</string>
-    <string name="author">Author: Muhammad Utsman</string>
-    <string name="api">API: Faaraz API</string>
+    <string name="author">Develop by Muhammad Utsman</string>
+    <string name="api">Instagram API by Faaraz API</string>
     <string name="btn_api">Faaraz API</string>
     <string name="btn_repo">Repository</string>
     <string name="tutor_desc">Copy link post Instagram and open this app</string>
     <string name="contact">Contact me</string>
+    <string name="repost_guide">Caption copied. Tap and hold to paste caption</string>
+    <string name="tutor_text">Copy Instagram post and Jomblo Gram automatically launch</string>
+    <string name="close_tutorial">Close tutorial</string>
+    <string name="ig_repost">Repost on Instagram</string>
+    <string name="app_share">Share to other apps</string>
+    <string name="preparing_dialog">Preparing…</string>
+    <string name="ok">OK</string>
+    <string name="repo_url">https://github.com/utsmannn/JombloGram</string>
+    <string name="email_gue">utsmannn@outlook.com</string>
+    <string name="farzain_web">https://rest.farzain.com/</string>
+    <string name="btn_tutorial_text">tutorial</string>
 </resources>

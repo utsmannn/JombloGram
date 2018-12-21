@@ -12,7 +12,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
 import com.kucingapes.jomblogram.R
+import com.kucingapes.jomblogram.helper.Utils
 import com.kucingapes.jomblogram.view.IButtonDownload
 import kotlinx.android.synthetic.main.item_list_image.view.*
 
@@ -33,6 +35,7 @@ class ItemListAdapter(private val images: MutableList<String>,
         val video = videos[position]
 
         Glide.with(context)
+                .setDefaultRequestOptions(RequestOptions().placeholder(Utils.circularProgress(context)))
                 .load(image)
                 .into(holder.itemView.item_image)
 
